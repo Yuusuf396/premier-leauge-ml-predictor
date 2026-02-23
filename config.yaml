@@ -1,0 +1,52 @@
+paths:
+  raw_glob: "premier-league-api/data/raw/seasons/*.csv"
+  processed_matches: "data/processed/matches_clean.parquet"
+  features_table: "data/processed/features_table.parquet"
+  model_dir: "models"
+  report_dir: "reports"
+  run_log: "reports/run_history.txt"
+
+split:
+  train_seasons:
+    - "2016-17"
+    - "2017-18"
+    - "2018-19"
+    - "2019-20"
+    - "2020-21"
+    - "2021-22"
+    - "2022-23"
+  validation_seasons:
+    - "2023-24"
+  test_seasons:
+    - "2024-25"
+    - "2025-26"
+
+training:
+  seed: 42
+  use_cached_processed: true
+  calibration_methods:
+    - "sigmoid"
+
+reports:
+  enable_plots: false
+
+model:
+  n_estimators: 500
+  learning_rate: 0.03
+  max_depth: -1
+  xgb_max_depth: 5
+  hist_max_depth: 6
+  subsample: 0.9
+  colsample_bytree: 0.9
+
+features:
+  priors:
+    points: 1.35
+    goals_for: 1.35
+    goals_against: 1.35
+    goal_diff: 0.0
+    rest_days: 7.0
+  elo:
+    initial_rating: 1500
+    k_factor: 20
+    home_advantage: 60
