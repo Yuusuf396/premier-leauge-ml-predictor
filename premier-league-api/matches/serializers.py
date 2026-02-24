@@ -6,6 +6,7 @@ from .models import ModelVersion, PredictionRequest, PredictionResult
 class PredictionCreateSerializer(serializers.Serializer):
     home_team = serializers.CharField(max_length=100)
     away_team = serializers.CharField(max_length=100)
+    season = serializers.CharField(max_length=20, required=False, allow_blank=True)
     match_date = serializers.DateField()
 
     def validate(self, attrs):

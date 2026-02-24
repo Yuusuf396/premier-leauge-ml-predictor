@@ -6,14 +6,29 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from matches.models import Team
-from src.data import read_or_build_matches
+from src.data import read_or_build_matches, read_raw_matches
 
 
 def _resolve_config() -> dict:
-    from src.utils import load_config
-
     config_path = Path(settings.ML_CONFIG_PATH)
-    config = load_config(config_path)
+    try:
+        from src.utils import load_config
+
+        config = load_config(config_path)
+    except ModuleNotFoundError as exc:
+        if exc.name != "yaml":
+            raise
+        config = {
+            "paths": {
+                "raw_glob": "premier-league-api/data/raw/seasons/*.csv",
+                "processed_matches": "data/processed/matches_clean.parquet",
+                "features_table": "data/processed/features_table.parquet",
+                "model_dir": "models",
+                "report_dir": "reports",
+                "run_log": "reports/run_history.txt",
+            },
+            "training": {"use_cached_processed": True},
+        }
     config_root = config_path.parent
     for key in ["model_dir", "raw_glob", "processed_matches", "features_table", "report_dir", "run_log"]:
         path_value = config["paths"].get(key)
@@ -30,7 +45,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         config = _resolve_config()
-        matches = read_or_build_matches(config)
+        try:
+            matches = read_or_build_matches(config)
+        except ImportError:
+            self.stdout.write("Parquet engine unavailable; falling back to raw CSV history.")
+            matches = read_raw_matches(config["paths"]["raw_glob"])
 
         names = sorted(set(matches["home_team"].dropna().tolist()) | set(matches["away_team"].dropna().tolist()))
         created_count = 0

@@ -15,7 +15,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
-from src.data import read_or_build_matches
+from src.data import read_or_build_matches, read_raw_matches
 from src.features import build_fixture_features
 
 from .models import ModelVersion, PredictionRequest, PredictionResult, Team
@@ -46,10 +46,36 @@ def _flatten_error_message(detail) -> str:
 
 
 def _resolve_config() -> dict:
-    from src.utils import load_config
-
     config_path = Path(settings.ML_CONFIG_PATH)
-    config = load_config(config_path)
+    try:
+        from src.utils import load_config
+
+        config = load_config(config_path)
+    except ModuleNotFoundError as exc:
+        if exc.name != "yaml":
+            raise
+        logger.warning("pyyaml_missing_using_fallback_config")
+        config = {
+            "paths": {
+                "raw_glob": "premier-league-api/data/raw/seasons/*.csv",
+                "processed_matches": "data/processed/matches_clean.parquet",
+                "features_table": "data/processed/features_table.parquet",
+                "model_dir": "models",
+                "report_dir": "reports",
+                "run_log": "reports/run_history.txt",
+            },
+            "training": {"use_cached_processed": True},
+            "features": {
+                "priors": {
+                    "points": 1.35,
+                    "goals_for": 1.35,
+                    "goals_against": 1.35,
+                    "goal_diff": 0.0,
+                    "rest_days": 7.0,
+                },
+                "elo": {"initial_rating": 1500, "k_factor": 20, "home_advantage": 60},
+            },
+        }
     config_root = config_path.parent
     for key in ["model_dir", "raw_glob", "processed_matches", "features_table", "report_dir", "run_log"]:
         path_value = config["paths"].get(key)
@@ -187,7 +213,11 @@ def _build_prediction_contract_payload(result: PredictionResult) -> dict:
 def _load_matches_or_error():
     try:
         config = _resolve_config()
-        matches = read_or_build_matches(config)
+        try:
+            matches = read_or_build_matches(config)
+        except ImportError as exc:
+            logger.warning("parquet_engine_missing_falling_back_to_csv", extra={"error": str(exc)})
+            matches = read_raw_matches(config["paths"]["raw_glob"])
         return config, matches, None
     except FileNotFoundError as exc:
         logger.warning("data_load_failed_missing_file", extra={"error": str(exc)})
@@ -306,7 +336,11 @@ def create_prediction(request):
         logger.exception("prediction_unavailable", extra={"error": str(exc)})
         return _error_response("prediction_unavailable", str(exc), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    matches = read_or_build_matches(config)
+    try:
+        matches = read_or_build_matches(config)
+    except ImportError as exc:
+        logger.warning("parquet_engine_missing_falling_back_to_csv", extra={"error": str(exc)})
+        matches = read_raw_matches(config["paths"]["raw_glob"])
     home_team = Team.objects.filter(name=home_name).first()
     if home_team is None:
         logger.warning("prediction_unknown_team", extra={"team_role": "home", "team_name": home_name})
@@ -414,6 +448,10 @@ def prediction_detail(request, prediction_id: int):
 
 @api_view(["GET"])
 def active_model(request):
+    return _active_model_response()
+
+
+def _active_model_response():
     model = ModelVersion.objects.filter(is_active=True).order_by("-created_at").first()
     if not model:
         return _error_response("not_found", "No active model version saved yet.", status.HTTP_404_NOT_FOUND)
@@ -440,4 +478,4 @@ class AdminTokenRequiredPermission(BasePermission):
 @authentication_classes([])
 @permission_classes([AdminTokenRequiredPermission])
 def admin_active_model(request):
-    return active_model(request)
+    return _active_model_response()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import glob
 import re
 from pathlib import Path
 from typing import Iterable
@@ -77,7 +78,10 @@ def _infer_ftr(home_goals: int, away_goals: int) -> str:
 
 
 def read_raw_matches(raw_glob: str) -> pd.DataFrame:
-    files = sorted(Path().glob(raw_glob))
+    if Path(raw_glob).is_absolute():
+        files = [Path(p) for p in sorted(glob.glob(raw_glob))]
+    else:
+        files = sorted(Path().glob(raw_glob))
     if not files:
         raise FileNotFoundError(f"No files found for pattern: {raw_glob}")
 

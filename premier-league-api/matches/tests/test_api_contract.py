@@ -3,10 +3,12 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
-from matches.models import Team
+from matches.models import ModelVersion, Team
 
 
 class _FakeModel:
@@ -148,11 +150,37 @@ class PredictionApiContractTests(TestCase):
         self.assertNotIn("traceback", str(payload).lower())
 
     def test_admin_active_model_requires_token(self):
+        ModelVersion.objects.create(version="v-test", artifact_path="models/model_latest.joblib", is_active=True)
+        user = get_user_model().objects.create_user(username="apiadmin", password="secret-pass")
+        token = Token.objects.create(user=user)
+
+        auth_response = self.client.get(
+            self.admin_active_model_url,
+            HTTP_AUTHORIZATION=f"Token {token.key}",
+        )
+        self.assertEqual(auth_response.status_code, 200, auth_response.content)
+
         response = self.client.get(self.admin_active_model_url)
         self.assertEqual(response.status_code, 403)
         payload = response.json()
         self.assertEqual(payload["error"], "forbidden")
         self.assertIn("token", payload["message"].lower())
+
+    @patch("matches.views._metadata_file_exists", return_value=True)
+    @patch("matches.views._active_artifact")
+    def test_health_returns_ok_when_model_loaded(self, mock_active_artifact, mock_metadata_exists):
+        mock_active_artifact.return_value = (
+            {"paths": {}},
+            Path("models/model_latest.joblib"),
+            {"trained_at": "health-ok-v1", "feature_columns": ["home_points_5"]},
+        )
+
+        response = self.client.get(self.health_url)
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["artifact_loaded"])
+        self.assertEqual(payload["model_version"], "health-ok-v1")
 
     @patch("matches.views._active_artifact")
     def test_missing_model_health_and_insufficient_history_errors_are_structured(self, mock_active_artifact):

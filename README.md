@@ -129,3 +129,51 @@ Output:
 - Test: 2024-25 and 2025-26
 
 Also includes rolling backtest: train up to season `S`, test on `S+1`.
+
+## API smoke test (Django app)
+
+```bash
+cd premier-league-api
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py sync_teams_from_history
+python manage.py runserver
+```
+
+## Admin Access (Token Auth)
+
+```bash
+cd premier-league-api
+python manage.py createsuperuser
+python manage.py drf_create_token <username>
+```
+
+```bash
+curl -H "Authorization: Token <your-token>" \
+  http://localhost:8000/api/admin/models/active/
+```
+
+## Smoke Test Requests
+
+```bash
+curl localhost:8000/api/health/
+curl localhost:8000/api/teams/
+curl -X POST localhost:8000/api/predict/match \
+  -H "Content-Type: application/json" \
+  -d '{
+        "home_team":"Manchester United",
+        "away_team":"Arsenal",
+        "season":"2025-26",
+        "match_date":"2026-03-15"
+      }'
+```
+
+Prediction response fields (required):
+
+- `expected_home_goals`
+- `expected_away_goals`
+- `home_win_probability`
+- `draw_probability`
+- `away_win_probability`
+- `model_version`
+- `features`
