@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     "rest_framework",
+    "rest_framework.authtoken",
     "matches",
 ]
 
@@ -51,6 +52,10 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+    "EXCEPTION_HANDLER": "matches.exceptions.api_exception_handler",
 }
 
 ML_CONFIG_PATH = str(PROJECT_ROOT / "config.yaml")

@@ -10,8 +10,20 @@ class PredictionCreateSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if attrs["home_team"].strip().lower() == attrs["away_team"].strip().lower():
-            raise serializers.ValidationError({"error": "home_team and away_team must be different"})
+            raise serializers.ValidationError("Home team and away team must be different.")
         return attrs
+
+
+class PredictionContractSerializer(serializers.Serializer):
+    home_team = serializers.CharField()
+    away_team = serializers.CharField()
+    expected_home_goals = serializers.FloatField()
+    expected_away_goals = serializers.FloatField()
+    home_win_probability = serializers.FloatField()
+    draw_probability = serializers.FloatField()
+    away_win_probability = serializers.FloatField()
+    model_version = serializers.CharField()
+    features = serializers.JSONField()
 
 
 class PredictionResultSerializer(serializers.ModelSerializer):
