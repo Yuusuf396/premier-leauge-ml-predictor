@@ -2,6 +2,7 @@ import os
 import json
 import datetime
 import random
+import base64
 import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -21,23 +22,58 @@ SCOPES          = [
 
 
 def _load_service_account_credentials():
-    """Support both:
-    - GOOGLE_SERVICE_ACCOUNT_KEY as a file path
-    - GOOGLE_SERVICE_ACCOUNT_KEY as raw JSON content
+    """Support service account credentials from:
+    - a file path
+    - raw JSON content
+    - base64-encoded JSON content
     """
     raw = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", KEY_FILE)
+    if not raw:
+        raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY is not set.")
 
     if os.path.exists(raw):
         return service_account.Credentials.from_service_account_file(
             raw, scopes=SCOPES
         )
 
-    try:
-        info = json.loads(raw)
-    except (TypeError, json.JSONDecodeError) as exc:
+    raw = raw.strip()
+
+    if raw.startswith("-----BEGIN PRIVATE KEY-----"):
         raise ValueError(
-            "GOOGLE_SERVICE_ACCOUNT_KEY must be a path to a key file or valid JSON content."
-        ) from exc
+            "GOOGLE_SERVICE_ACCOUNT_KEY appears to be a raw private key, not a full "
+            "service account JSON object."
+        )
+
+    candidate_payloads = []
+    candidate_payloads.append(raw)
+
+    try:
+        candidate_payloads.append(base64.b64decode(raw).decode("utf-8").strip())
+    except Exception:
+        pass
+
+    info = None
+    for payload in candidate_payloads:
+        try:
+            info = json.loads(payload)
+            break
+        except (TypeError, json.JSONDecodeError):
+            continue
+
+    if not isinstance(info, dict):
+        raise ValueError(
+            "GOOGLE_SERVICE_ACCOUNT_KEY must be a path to a service account key file, "
+            "raw JSON text, or base64-encoded JSON text."
+        )
+
+    if info.get("type") != "service_account" or not (
+        "client_email" in info and "token_uri" in info
+    ):
+        raise ValueError(
+            "GOOGLE_SERVICE_ACCOUNT_KEY contains JSON but not a service_account object. "
+            "Expected fields include 'type': 'service_account', 'client_email', and 'token_uri'. "
+            "Use the JSON key downloaded from Google Service Accounts, not an OAuth client secret."
+        )
 
     return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
 
