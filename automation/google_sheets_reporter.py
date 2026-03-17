@@ -3,16 +3,36 @@ import json
 import datetime
 import random
 import base64
+import re
 import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-SPREADSHEET_ID  = os.getenv(
-    "SPREADSHEET_ID",
-    "1m7192nwRRpGiU-UCqf2IxImNOMUL98cKawnXae1i_vs",
+def _clean_spreadsheet_id(raw_id: str) -> str:
+    if not raw_id:
+        return ""
+
+    cleaned = str(raw_id).strip().strip("\"' ")
+    cleaned = re.sub(r"\s+", "", cleaned)
+    return cleaned
+
+
+SPREADSHEET_ID  = _clean_spreadsheet_id(
+    os.getenv("SPREADSHEET_ID", "1m7192nwRRpGiU-UCqf2IxImNOMUL98cKawnXae1i_vs")
 )
+if not SPREADSHEET_ID:
+    raise ValueError("SPREADSHEET_ID is empty after trimming whitespace.")
+if "\n" in SPREADSHEET_ID or "\r" in SPREADSHEET_ID:
+    # Guard against hidden control chars that break API requests.
+    SPREADSHEET_ID = SPREADSHEET_ID.strip()
+
+if len(SPREADSHEET_ID) < 30:
+    raise ValueError(
+        f"SPREADSHEET_ID looks too short ({len(SPREADSHEET_ID)}). "
+        "Check the environment variable value."
+    )
 KEY_FILE        = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", "service_account.json")
 SCOPES          = [
     "https://www.googleapis.com/auth/spreadsheets",
