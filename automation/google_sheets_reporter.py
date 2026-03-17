@@ -19,6 +19,28 @@ SCOPES          = [
     "https://www.googleapis.com/auth/drive.file",
 ]
 
+
+def _load_service_account_credentials():
+    """Support both:
+    - GOOGLE_SERVICE_ACCOUNT_KEY as a file path
+    - GOOGLE_SERVICE_ACCOUNT_KEY as raw JSON content
+    """
+    raw = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", KEY_FILE)
+
+    if os.path.exists(raw):
+        return service_account.Credentials.from_service_account_file(
+            raw, scopes=SCOPES
+        )
+
+    try:
+        info = json.loads(raw)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            "GOOGLE_SERVICE_ACCOUNT_KEY must be a path to a key file or valid JSON content."
+        ) from exc
+
+    return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
 # ─── REPORT GENERATION ───────────────────────────────────────────────────────
 
 def generate_report() -> pd.DataFrame:
@@ -54,9 +76,7 @@ def generate_report() -> pd.DataFrame:
 # ─── GOOGLE SHEETS HELPERS ───────────────────────────────────────────────────
 
 def get_sheets_service():
-    creds = service_account.Credentials.from_service_account_file(
-        KEY_FILE, scopes=SCOPES
-    )
+    creds = _load_service_account_credentials()
     return build("sheets", "v4", credentials=creds)
 
 
@@ -114,9 +134,7 @@ def upload_csv_to_drive(csv_path: str):
     """
     from googleapiclient.http import MediaFileUpload
 
-    creds = service_account.Credentials.from_service_account_file(
-        KEY_FILE, scopes=["https://www.googleapis.com/auth/drive"]
-    )
+    creds = _load_service_account_credentials()
     drive_service = build("drive", "v3", credentials=creds)
 
     folder_id = os.getenv("DRIVE_FOLDER_ID")   # optional: pin to a folder
