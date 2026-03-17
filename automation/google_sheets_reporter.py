@@ -13,12 +13,12 @@ SPREADSHEET_ID  = os.getenv(
     "SPREADSHEET_ID",
     "1m7192nwRRpGiU-UCqf2IxImNOMUL98cKawnXae1i_vs",
 )
-SHEET_TAB_NAME  = "Weekly Reports"
 KEY_FILE        = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", "service_account.json")
 SCOPES          = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive.file",
 ]
+SHEET_TAB_NAME  = os.getenv("SHEET_TAB_NAME", "Weekly Reports")
 
 
 def _load_service_account_credentials():
@@ -32,8 +32,29 @@ def _load_service_account_credentials():
         raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY is not set.")
 
     if os.path.exists(raw):
-        return service_account.Credentials.from_service_account_file(
-            raw, scopes=SCOPES
+        with open(raw, "r", encoding="utf-8") as f:
+            raw_text = f.read()
+
+        try:
+            info = json.loads(raw_text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Service account file '{raw}' is not valid JSON. "
+                f"Download the key from Google Cloud IAM → Service Accounts → Keys."
+            ) from exc
+
+        if (
+            info.get("type") == "service_account"
+            and "client_email" in info
+            and "token_uri" in info
+        ):
+            return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
+        raise ValueError(
+            f"Service account file '{raw}' is missing required fields. "
+            "Expected keys for Google Service Account JSON: type='service_account', "
+            "'client_email', and 'token_uri'. "
+            "Make sure this is not an OAuth client secret file."
         )
 
     raw = raw.strip()
@@ -77,6 +98,35 @@ def _load_service_account_credentials():
 
     return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
 
+
+def resolve_sheet_name(service) -> str:
+    """Return the configured sheet name, or a safe fallback."""
+    resp = service.spreadsheets().get(
+        spreadsheetId=SPREADSHEET_ID,
+        fields="sheets(properties.title)",
+    ).execute()
+
+    sheet_titles = [
+        item.get("properties", {}).get("title")
+        for item in resp.get("sheets", [])
+        if item.get("properties", {}).get("title")
+    ]
+
+    if not sheet_titles:
+        raise ValueError("Spreadsheet has no sheets.")
+
+    if SHEET_TAB_NAME in sheet_titles:
+        return SHEET_TAB_NAME
+
+    normalized = SHEET_TAB_NAME.strip().lower()
+    for title in sheet_titles:
+        if title.strip().lower() == normalized:
+            return title
+
+    fallback = sheet_titles[0]
+    print(f"⚠️ Sheet '{SHEET_TAB_NAME}' not found. Using first sheet: '{fallback}'.")
+    return fallback
+
 # ─── REPORT GENERATION ───────────────────────────────────────────────────────
 
 def generate_report() -> pd.DataFrame:
@@ -116,17 +166,20 @@ def get_sheets_service():
     return build("sheets", "v4", credentials=creds)
 
 
-def ensure_header_exists(service, header_row: list[str]):
+def ensure_header_exists(service, sheet_name: str, header_row: list[str]):
     """Write header row only if the sheet is empty."""
+    escaped_sheet = sheet_name.replace("'", "''")
+    sheet_range = lambda r: "'" + escaped_sheet + "'!" + r
+
     result = service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID,
-        range=f"{SHEET_TAB_NAME}!A1:Z1",
+        range=sheet_range("A1:Z1"),
     ).execute()
 
     if "values" not in result:
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"{SHEET_TAB_NAME}!A1",
+            range=sheet_range("A1"),
             valueInputOption="RAW",
             body={"values": [header_row]},
         ).execute()
@@ -135,21 +188,23 @@ def ensure_header_exists(service, header_row: list[str]):
         print("✓ Header already present — skipping.")
 
 
-def append_rows(service, df: pd.DataFrame):
+def append_rows(service, sheet_name: str, df: pd.DataFrame):
     """Append all rows from df to the sheet (after the last filled row)."""
     values = df.values.tolist()
     body = {"values": values}
+    escaped_sheet = sheet_name.replace("'", "''")
+    sheet_range = "'" + escaped_sheet + "'!A1"
 
     result = service.spreadsheets().values().append(
         spreadsheetId=SPREADSHEET_ID,
-        range=f"{SHEET_TAB_NAME}!A1",
+        range=sheet_range,
         valueInputOption="RAW",
         insertDataOption="INSERT_ROWS",
         body=body,
     ).execute()
 
     updated = result.get("updates", {}).get("updatedRows", 0)
-    print(f"✓ Appended {updated} row(s) to '{SHEET_TAB_NAME}'.")
+    print(f"✓ Appended {updated} row(s) to '{sheet_name}'.")
     return updated
 
 
@@ -196,8 +251,10 @@ def main():
 
     # 1. Append to Google Sheet
     service = get_sheets_service()
-    ensure_header_exists(service, df.columns.tolist())
-    append_rows(service, df)
+    actual_sheet_name = resolve_sheet_name(service)
+    print("  Using sheet:", actual_sheet_name)
+    ensure_header_exists(service, actual_sheet_name, df.columns.tolist())
+    append_rows(service, actual_sheet_name, df)
 
     # 2. Export local CSV (uncomment upload_csv_to_drive to also push to Drive)
     csv_path = export_csv(df)
