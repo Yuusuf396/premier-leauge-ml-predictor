@@ -1,0 +1,7 @@
+ts=2026-02-21T04:31:38Z | event=predict | fixtures_file=fixtures.csv | model_version=20260221T041905Z | n_predictions=2 | predictions_file=reports/predictions.csv
+ts=2026-02-21T04:31:51Z | event=train | calibration=sigmoid | n_rows=3420 | run_id=20260221T043151Z | selected_model=logistic | val_accuracy=0.607895 | val_brier=0.529105 | val_log_loss=0.904348
+ts=2026-02-21T04:32:06Z | event=evaluate | calibration=sigmoid | selected_model=logistic | test_accuracy=0.528947 | test_brier=0.590725 | test_log_loss=0.991308 | val_accuracy=0.607895 | val_log_loss=0.904348
+ts=2026-02-21T04:36:07Z | event=train | calibration=sigmoid | n_rows=3420 | run_id=20260221T043607Z | selected_model=logistic | val_accuracy=0.607895 | val_brier=0.529105 | val_log_loss=0.904348
+ts=2026-02-21T04:36:29Z | event=evaluate | calibration=sigmoid | selected_model=logistic | test_accuracy=0.528947 | test_brier=0.590725 | test_log_loss=0.991308 | val_accuracy=0.607895 | val_log_loss=0.904348
+ts=2026-02-21T04:40:08Z | event=evaluate | calibration=sigmoid | selected_model=logistic | test_accuracy=0.528947 | test_brier=0.590725 | test_log_loss=0.991308 | val_accuracy=0.607895 | val_log_loss=0.904348
+ts=2026-02-21T05:02:39Z | event=predict | fixtures_file=fixtures.csv | model_version=20260221T043607Z | n_predictions=2 | predictions_file=reports/predictions.csv

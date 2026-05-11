@@ -1,0 +1,15 @@
+# Google Sheets API and automation
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.107.0
+
+# Data processing
+pandas==2.1.4
+numpy==1.24.3
+
+# PySpark (for ML pipeline scaling)
+pyspark==3.5.0
+
+# Utilities
+python-dotenv==1.0.0

@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "features_table": "data/processed/features_table.parquet",
+    "model_latest": "models/model_latest.joblib",
+    "model_versioned": "models/model_20260221T043607Z.joblib"
+  },
+  "n_rows": 3420,
+  "run_id": "20260221T043607Z",
+  "split_counts": {
+    "test": 380,
+    "train": 2660,
+    "validation": 380
+  },
+  "validation_metrics": {
+    "logistic": {
+      "accuracy": 0.6078947368421053,
+      "brier": 0.5291053209718265,
+      "log_loss": 0.9043478364474247
+    },
+    "main_gradient_boosting": {
+      "accuracy": 0.5710526315789474,
+      "brier": 0.5613532567730471,
+      "log_loss": 0.9459262153902931
+    },
+    "most_common": {
+      "accuracy": 0.4605263157894737,
+      "brier": 0.6367799197241224,
+      "log_loss": 1.0534707792554954
+    },
+    "selected": {
+      "metrics": {
+        "accuracy": 0.6078947368421053,
+        "brier": 0.5291053209718265,
+        "log_loss": 0.9043478364474247
+      },
+      "name": "logistic"
+    }
+  }
+}

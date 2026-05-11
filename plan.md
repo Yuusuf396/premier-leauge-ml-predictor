@@ -53,7 +53,7 @@ Deliverables:
 Acceptance:
 - At least 2016-17 to 2024-25 loaded/available for pipeline
 - Invalid rows are dropped with log output
-- No duplicate source matches
+- No duplicate source matches 
 
 ## Phase 2 - Feature Engineering (Day 4)
 Deliverables:

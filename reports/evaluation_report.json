@@ -1,0 +1,95 @@
+{
+  "main_calibration_method": "sigmoid",
+  "plots": {
+    "calibration_test": "reports/calibration_test.png",
+    "confusion_matrix_test": "reports/confusion_matrix_test.png",
+    "warning": "Plot generation disabled by config."
+  },
+  "rolling_backtest": [
+    {
+      "accuracy": 0.5184210526315789,
+      "brier": 0.7872092940015532,
+      "log_loss": 1.8336223518650716,
+      "test_season": "2017-18",
+      "train_up_to": "2016-17"
+    },
+    {
+      "accuracy": 0.5,
+      "brier": 0.6961108480692755,
+      "log_loss": 1.3140513482324054,
+      "test_season": "2018-19",
+      "train_up_to": "2017-18"
+    },
+    {
+      "accuracy": 0.49736842105263157,
+      "brier": 0.7106287977453917,
+      "log_loss": 1.3852686249903432,
+      "test_season": "2019-20",
+      "train_up_to": "2018-19"
+    },
+    {
+      "accuracy": 0.47368421052631576,
+      "brier": 0.7514853619174832,
+      "log_loss": 1.4567352017246016,
+      "test_season": "2020-21",
+      "train_up_to": "2019-20"
+    },
+    {
+      "accuracy": 0.49736842105263157,
+      "brier": 0.6551873472874686,
+      "log_loss": 1.193476056863965,
+      "test_season": "2021-22",
+      "train_up_to": "2020-21"
+    },
+    {
+      "accuracy": 0.5,
+      "brier": 0.6687119308616396,
+      "log_loss": 1.1702947560434291,
+      "test_season": "2022-23",
+      "train_up_to": "2021-22"
+    },
+    {
+      "accuracy": 0.5236842105263158,
+      "brier": 0.5993095363275258,
+      "log_loss": 1.0349345568935855,
+      "test_season": "2023-24",
+      "train_up_to": "2022-23"
+    },
+    {
+      "accuracy": 0.5026315789473684,
+      "brier": 0.6401482503330147,
+      "log_loss": 1.0955478200974569,
+      "test_season": "2024-25",
+      "train_up_to": "2023-24"
+    }
+  ],
+  "selected_model_name": "logistic",
+  "test": {
+    "by_season": {
+      "2024-25": {
+        "accuracy": 0.5289473684210526,
+        "brier": 0.5907251103032147,
+        "log_loss": 0.9913075240070863
+      }
+    },
+    "overall": {
+      "accuracy": 0.5289473684210526,
+      "brier": 0.5907251103032147,
+      "log_loss": 0.9913075240070863
+    }
+  },
+  "validation": {
+    "by_season": {
+      "2023-24": {
+        "accuracy": 0.6078947368421053,
+        "brier": 0.5291053209718265,
+        "log_loss": 0.9043478364474247
+      }
+    },
+    "overall": {
+      "accuracy": 0.6078947368421053,
+      "brier": 0.5291053209718265,
+      "log_loss": 0.9043478364474247
+    }
+  }
+}

@@ -69,6 +69,25 @@ pip install lightgbm
 pip install xgboost
 ```
 
+## Run with Docker (API + Frontend)
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8000`
+
+Stop services:
+
+```bash
+docker compose down
+```
+
 ## Train
 
 ```bash

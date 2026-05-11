@@ -203,9 +203,9 @@ def ensure_header_exists(service, sheet_name: str, header_row: list[str]):
             valueInputOption="RAW",
             body={"values": [header_row]},
         ).execute()
-        print("✓ Header row written.")
+        print(" Header row written.")
     else:
-        print("✓ Header already present — skipping.")
+        print(" Header already present — skipping.")
 
 
 def append_rows(service, sheet_name: str, df: pd.DataFrame):
